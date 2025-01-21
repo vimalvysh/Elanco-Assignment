@@ -1,62 +1,117 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
+import { dirname } from 'path';
+// modules
+import countreyService from '../services/countreyService';
+import CustomErrorMessage from '../errors/CustomErrorMessage';
 
+// Todo :  move to env.
 const REST_COUNTRIES_API = 'https://restcountries.com/v3.1/all';
+const customError = new CustomErrorMessage();
 
 // Get all countries
-export const getCountries = async (req: Request, res: Response) => {
-    const response = await axios.get(REST_COUNTRIES_API);
-    const countries = response.data.map((country: any) => ({
-      name: country.name.common,
-      flag: country.flags.svg,
-      region: country.region,
-    }));
-    res.json(countries);
+export const getCountries = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let countries = await countreyService.getCountries();
+    //  Loging.
+    console.log({
+      desciption: 'info:getCountries controller',
+      data: 'countries',
+      timestamp: new Date(),
+    });
+
+    res.json({ success: true, data: countries });
+  } catch (error) {
+    const msg: string = customError.getErroMsg(error);
+
+    //  Loging.
+    const errorObj = {
+      desciption: 'error: getCountries controller',
+      data: error,
+      timestamp: new Date(),
+    };
+    console.error(errorObj);
+    throw new CustomErrorMessage({ code: 500, data: msg, logging: true });
+  }
 };
 
 // Get country by code
 export const getCountryByCode = async (req: Request, res: Response) => {
-  const { code } = req.params;
-    const response = await axios.get(`https://restcountries.com/v3.1/alpha/${code}`);
-    const country = response.data[0];
-    res.json({
-      name: country.name.common,
-      flag: country.flags.svg,
-      population: country.population,
-      languages: country.languages,
-      region: country.region,
-      currency: country.currencies,
+  try {
+    const { code } = req.params;
+
+    if (!code) {
+      throw new CustomErrorMessage({ code: 400, data: 'Invalid code.', logging: true });
+    }
+
+    let countries = await countreyService.getCountryByCode(code);
+    //  Loging.
+    console.log({
+      desciption: 'info:getCountryByCode controller',
+      data: 'countries',
+      timestamp: new Date(),
     });
+    res.json({ success: true, data: countries });
+  } catch (error: any) {
+    //  Loging.
+    const errorObj = {
+      desciption: 'error: getCountryByCode controller',
+      data: error,
+      timestamp: new Date(),
+    };
+    console.error(errorObj);
+    throw new CustomErrorMessage({ code: error.code, data: error.message, logging: true });
+  }
 };
 
 // Filter countries by region
 export const filterCountriesByRegion = async (req: Request, res: Response) => {
-  const { region } = req.params;
-    const response = await axios.get(REST_COUNTRIES_API);
-    const countries = response.data.filter((country: any) => country.region === region);
-    res.json(countries);
+  try {
+    const { region } = req.params;
+
+    if (!region) {
+      throw new CustomErrorMessage({ code: 400, data: 'Invalid region.', logging: true });
+    }
+
+    let countries = await countreyService.filterCountriesByRegion(region);
+    //  Loging.
+    console.log({
+      desciption: 'info:filterCountriesByRegion controller',
+      data: 'countries',
+      timestamp: new Date(),
+    });
+    res.json({ success: true, data: countries });
+  } catch (error: any) {
+    //  Loging.
+    const errorObj = {
+      desciption: 'error: filterCountriesByRegion controller',
+      data: error,
+      timestamp: new Date(),
+    };
+    // console.error(errorObj);
+    throw new CustomErrorMessage({ code: error.code, data: error.message, logging: true });
+  }
 };
 
 // Search countries
 export const searchCountries = async (req: Request, res: Response) => {
-  const { name, capital, region, timezone } = req.query;
-    const response = await axios.get(REST_COUNTRIES_API);
-    let countries = response.data;
-    if (name) {
-      countries = countries.filter((country: any) =>
-        country.name.common.toLowerCase().includes((name as string).toLowerCase())
-      );
-    }
-    if (capital) {
-      countries = countries.filter((country: any) =>
-        country.capital && country.capital[0].toLowerCase().includes((capital as string).toLowerCase())
-      );
-    }
-    if (region) {
-      countries = countries.filter((country: any) => country.region === region);
-    }
-    if (timezone) {
-      countries = countries.filter((country: any) => country.timezones.includes(timezone as string));
-    }
-    res.json(countries);
+  try {
+    let countries = await countreyService.searchCountries(req.query);
+    //  Loging.
+    console.log({
+      desciption: 'info:searchCountries controller',
+      data: countries,
+      timestamp: new Date(),
+    });
+    res.json({ success: true, data: countries });
+  } catch (error: any) {
+    //  Loging.
+    const errorObj = {
+      desciption: 'error: searchCountries controller',
+      data: error,
+      timestamp: new Date(),
+    };
+    // console.error(errorObj);
+    throw new CustomErrorMessage({ code: error.code, data: error.message, logging: true });
   }
+};
