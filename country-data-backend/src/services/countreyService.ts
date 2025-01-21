@@ -8,10 +8,16 @@ import { REST_COUNTRIES_API } from '../config/config';
 const getCountries = async (): Promise<Country> => {
   try {
     const response = await axios.get(REST_COUNTRIES_API);
+    if (response && !response.data) {
+      throw new Error('No countries available');
+    }
     const countries = response.data.map((country: any) => ({
       name: country.name.common,
       flag: country.flags.svg,
       region: country.region,
+      population: country.population,
+      currencies: country.currencies,
+      timezones: country.timezones,
     }));
     //  Loging.
     console.log({
@@ -19,10 +25,6 @@ const getCountries = async (): Promise<Country> => {
       data: 'countries',
       timestamp: new Date(),
     });
-
-    if (countries && countries.length === 0) {
-      throw new Error('No countries available');
-    }
 
     return countries;
   } catch (error) {
